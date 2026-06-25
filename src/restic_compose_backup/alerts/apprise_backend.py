@@ -10,7 +10,7 @@ from restic_compose_backup.alerts.base import BaseAlert
 logger = logging.getLogger(__name__)
 
 
-def _parse_urls(value):
+def _parse_urls(value: str | None) -> list[str]:
     """Split a comma/newline separated string into a clean list of URLs."""
     if not value:
         return []
@@ -50,16 +50,19 @@ def _legacy_discord_url():
 
 def _legacy_urls():
     urls = []
+    sources = []
     email_url = _legacy_email_url()
     if email_url:
         urls.append(email_url)
+        sources.append("EMAIL_*")
     discord_url = _legacy_discord_url()
     if discord_url:
         urls.append(discord_url)
+        sources.append("DISCORD_WEBHOOK")
     if urls:
         logger.warning(
-            "EMAIL_* / DISCORD_WEBHOOK are deprecated and mapped onto Apprise "
-            "internally. Configure APPRISE_URLS instead."
+            "%s deprecated and mapped onto Apprise internally. Configure APPRISE_URLS instead.",
+            " and ".join(sources),
         )
     return urls
 
@@ -67,7 +70,7 @@ def _legacy_urls():
 class AppriseAlert(BaseAlert):
     name = "apprise"
 
-    def __init__(self, urls):
+    def __init__(self, urls: list[str]):
         self.urls = urls
 
     @classmethod
@@ -87,4 +90,7 @@ class AppriseAlert(BaseAlert):
         apobj = apprise.Apprise()
         for url in self.urls:
             apobj.add(url)
-        apobj.notify(title=subject or "", body=body or "")
+        if not apobj.notify(title=subject or "", body=body or ""):
+            logger.error(
+                "Apprise failed to deliver notification to one or more targets"
+            )

@@ -101,3 +101,14 @@ class AppriseAlertTests(unittest.TestCase):
         apobj = m_apprise.Apprise.return_value
         self.assertEqual(apobj.add.call_count, 2)
         apobj.notify.assert_called_once_with(title="[ERROR] Backup failed", body="boom")
+
+    def test_send_logs_error_on_notify_failure(self):
+        alert = AppriseAlert(["pover://user@token"])
+        logger_name = "restic_compose_backup.alerts.apprise_backend"
+        with mock.patch(
+            "restic_compose_backup.alerts.apprise_backend.apprise"
+        ) as m_apprise:
+            m_apprise.Apprise.return_value.notify.return_value = False
+            with self.assertLogs(logger_name, level="ERROR") as cm:
+                alert.send(subject="[ERROR] x", body="y")
+        self.assertTrue(any("ERROR" in line for line in cm.output))
