@@ -91,3 +91,13 @@ class AppriseAlertTests(unittest.TestCase):
                 instance = AppriseAlert.create_from_env()
         self.assertEqual(len(instance.urls), 2)
         self.assertTrue(any("deprecated" in line for line in cm.output))
+
+    def test_send_adds_urls_and_notifies(self):
+        alert = AppriseAlert(["pover://user@token", "discord://1/abc"])
+        with mock.patch(
+            "restic_compose_backup.alerts.apprise_backend.apprise"
+        ) as m_apprise:
+            alert.send(subject="[ERROR] Backup failed", body="boom")
+        apobj = m_apprise.Apprise.return_value
+        self.assertEqual(apobj.add.call_count, 2)
+        apobj.notify.assert_called_once_with(title="[ERROR] Backup failed", body="boom")
