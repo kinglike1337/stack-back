@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+from urllib.parse import urlencode
 
 import apprise
 
@@ -17,6 +18,52 @@ def _parse_urls(value):
     return [part.strip() for part in parts if part.strip()]
 
 
+def _legacy_email_url():
+    host = os.environ.get("EMAIL_HOST")
+    port = os.environ.get("EMAIL_PORT")
+    user = os.environ.get("EMAIL_HOST_USER")
+    password = os.environ.get("EMAIL_HOST_PASSWORD") or ""
+    recipients = [
+        addr.strip()
+        for addr in (os.environ.get("EMAIL_SEND_TO") or "").split(",")
+        if addr.strip()
+    ]
+    if not (host and port and user and recipients):
+        return None
+    params = {
+        "user": user,
+        "pass": password,
+        "from": user,
+        "to": ",".join(recipients),
+    }
+    if port == "465":
+        params["mode"] = "ssl"
+    return f"mailtos://{host}:{port}?{urlencode(params)}"
+
+
+def _legacy_discord_url():
+    url = os.environ.get("DISCORD_WEBHOOK")
+    if isinstance(url, str) and url.startswith("https://"):
+        return url
+    return None
+
+
+def _legacy_urls():
+    urls = []
+    email_url = _legacy_email_url()
+    if email_url:
+        urls.append(email_url)
+    discord_url = _legacy_discord_url()
+    if discord_url:
+        urls.append(discord_url)
+    if urls:
+        logger.warning(
+            "EMAIL_* / DISCORD_WEBHOOK are deprecated and mapped onto Apprise "
+            "internally. Configure APPRISE_URLS instead."
+        )
+    return urls
+
+
 class AppriseAlert(BaseAlert):
     name = "apprise"
 
@@ -26,6 +73,7 @@ class AppriseAlert(BaseAlert):
     @classmethod
     def create_from_env(cls):
         urls = _parse_urls(os.environ.get("APPRISE_URLS"))
+        urls += _legacy_urls()
         instance = cls(urls)
         if instance.properly_configured:
             return instance
