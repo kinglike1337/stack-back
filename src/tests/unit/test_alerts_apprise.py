@@ -44,6 +44,13 @@ class AppriseAlertTests(unittest.TestCase):
         self.assertTrue(url.startswith("mailtos://mail.example.com:465?"))
         self.assertIn("mode=ssl", url)
 
+        import apprise
+
+        apobj = apprise.Apprise()
+        self.assertTrue(apobj.add(url))
+        recipients = [addr for _, addr in apobj[0].targets]
+        self.assertEqual(recipients, ["a@example.com", "b@example.com"])
+
     def test_legacy_email_port_587_no_ssl(self):
         env = {
             "EMAIL_HOST": "mail.example.com",
@@ -83,4 +90,4 @@ class AppriseAlertTests(unittest.TestCase):
             with self.assertLogs(logger_name, level="WARNING") as cm:
                 instance = AppriseAlert.create_from_env()
         self.assertEqual(len(instance.urls), 2)
-        self.assertTrue(any("APPRISE_URLS" in line for line in cm.output))
+        self.assertTrue(any("deprecated" in line for line in cm.output))
