@@ -139,8 +139,23 @@ LOG_LEVEL
 Log level for the ``rcb`` command. Valid values are
 ``debug``, ``info``, ``warning``, ``error``.
 
+APPRISE_URLS
+~~~~~~~~~~~~
+
+Comma- or newline-separated list of `Apprise <https://github.com/caronc/apprise>`_
+notification URLs. A single backend then delivers alerts to all of them
+(e.g. Pushover ``pover://user@token``, Telegram ``tgram://bottoken/chatid``,
+ntfy ``ntfy://topic``, Discord ``discord://id/token``).
+
+Alerts can be tested using the ``rcb alerts`` command.
+This will send a test message to all configured alert backends.
+
 EMAIL_HOST
 ~~~~~~~~~~
+
+.. note::
+   Deprecated. The ``EMAIL_*`` variables are still supported and mapped onto
+   Apprise internally; prefer ``APPRISE_URLS`` for new setups.
 
 The email host to use.
 
@@ -186,6 +201,10 @@ backends.
 
 DISCORD_WEBHOOK
 ~~~~~~~~~~~~~~~
+
+.. note::
+   Deprecated. Still supported and mapped onto Apprise internally;
+   prefer ``APPRISE_URLS`` for new setups.
 
 The discord webhook url. And administrator can quickly set this up
 by going to server settings in the discord client and create
