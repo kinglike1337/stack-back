@@ -18,13 +18,13 @@ def docker_client() -> DockerClient:
     """
     Create a docker client from the following environment variables::
 
-        DOCKER_HOST=unix://tmp/docker.sock
+        DOCKER_HOST=unix:///var/run/docker.sock
         DOCKER_TLS_VERIFY=1
         DOCKER_CERT_PATH=''
     """
     # NOTE: Remove this fallback in 1.0
     if not os.environ.get("DOCKER_HOST"):
-        os.environ["DOCKER_HOST"] = "unix://tmp/docker.sock"
+        os.environ["DOCKER_HOST"] = "unix:///var/run/docker.sock"
 
     return docker.from_env()
 
