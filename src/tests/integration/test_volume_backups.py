@@ -122,6 +122,6 @@ def test_excluded_service_not_backed_up(run_rcb_command):
     exit_code, output = run_rcb_command("status")
     assert exit_code == 0
     # The excluded_service should not appear in the backup list
-    assert "service: excluded_service" not in output, (
-        "Excluded service should not be in backup list"
-    )
+    assert (
+        "service: excluded_service" not in output
+    ), "Excluded service should not be in backup list"
