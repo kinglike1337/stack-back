@@ -143,3 +143,18 @@ class AppriseAlertTests(unittest.TestCase):
             with self.assertLogs(logger_name, level="ERROR") as cm:
                 alert.send(subject="[ERROR] x", body="y")
         self.assertTrue(any("failed to deliver" in line for line in cm.output))
+
+    def test_send_warns_on_rejected_url(self):
+        # A typo'd URL is rejected by Apprise's add() (returns False). The
+        # backend must surface that instead of silently dropping the target.
+        alert = AppriseAlert(["pover://user@token", "bogus"])
+        logger_name = "restic_compose_backup.alerts.apprise_backend"
+        with mock.patch(
+            "restic_compose_backup.alerts.apprise_backend.apprise"
+        ) as m_apprise:
+            apobj = m_apprise.Apprise.return_value
+            apobj.add.side_effect = [True, False]
+            apobj.notify.return_value = True
+            with self.assertLogs(logger_name, level="WARNING") as cm:
+                alert.send(subject="[INFO] x", body="y")
+        self.assertTrue(any("rejected" in line for line in cm.output))

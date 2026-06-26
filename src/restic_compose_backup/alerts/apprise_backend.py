@@ -93,8 +93,11 @@ class AppriseAlert(BaseAlert):
 
     def send(self, subject=None, body=None, alert_type=None):
         apobj = apprise.Apprise()
-        for url in self.urls:
-            apobj.add(url)
+        for index, url in enumerate(self.urls):
+            if not apobj.add(url):
+                logger.warning(
+                    "Apprise rejected APPRISE_URLS entry #%d (invalid URL)", index
+                )
         if not apobj.notify(title=subject or "", body=body or ""):
             logger.error(
                 "Apprise failed to deliver notification to one or more targets"
