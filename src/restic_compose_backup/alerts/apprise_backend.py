@@ -41,14 +41,19 @@ def _legacy_email_url():
         "from": user,
         "to": ",".join(recipients),
     }
+    # Reproduce the old smtp.py TLS behaviour: 465 -> implicit SSL, 587 ->
+    # STARTTLS (mailtos default), any other port -> plain SMTP without TLS.
+    scheme = "mailtos"
     if port == "465":
         params["mode"] = "ssl"
-    return f"mailtos://{host}:{port}?{urlencode(params)}"
+    elif port != "587":
+        scheme = "mailto"
+    return f"{scheme}://{host}:{port}?{urlencode(params)}"
 
 
 def _legacy_discord_url():
     url = os.environ.get("DISCORD_WEBHOOK")
-    if isinstance(url, str) and url.startswith("https://"):
+    if url and url.startswith("https://"):
         return url
     return None
 

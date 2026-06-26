@@ -93,6 +93,22 @@ class AppriseAlertTests(unittest.TestCase):
             instance = AppriseAlert.create_from_env()
         self.assertNotIn("mode=ssl", instance.urls[0])
 
+    def test_legacy_email_other_port_uses_insecure_mailto(self):
+        # The old SMTP backend sent plain (no TLS) for any port other than
+        # 465/587. Reproduce that for backward compatibility: ports != 465/587
+        # map to the insecure ``mailto://`` scheme, not ``mailtos://``.
+        env = {
+            "EMAIL_HOST": "relay.internal",
+            "EMAIL_PORT": "25",
+            "EMAIL_HOST_USER": "u@example.com",
+            "EMAIL_SEND_TO": "a@example.com",
+        }
+        with mock.patch.dict(os.environ, env, clear=True):
+            instance = AppriseAlert.create_from_env()
+        url = instance.urls[0]
+        self.assertTrue(url.startswith("mailto://relay.internal:25?"))
+        self.assertNotIn("mode=ssl", url)
+
     def test_legacy_email_incomplete_ignored(self):
         env = {
             "EMAIL_HOST": "mail.example.com",
