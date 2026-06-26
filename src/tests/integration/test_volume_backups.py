@@ -18,7 +18,7 @@ def test_backup_status(run_rcb_command):
 def test_backup_bind_mount(run_rcb_command, create_test_data, backup_container):
     """Test backing up a bind mount"""
     # Create test data in the bind mount
-    test_file = create_test_data("test_data/web/test.txt", "Hello from bind mount!")
+    create_test_data("test_data/web/test.txt", "Hello from bind mount!")
 
     # Wait a moment for the file to be visible
     time.sleep(2)
@@ -122,6 +122,6 @@ def test_excluded_service_not_backed_up(run_rcb_command):
     exit_code, output = run_rcb_command("status")
     assert exit_code == 0
     # The excluded_service should not appear in the backup list
-    assert "service: excluded_service" not in output, (
-        "Excluded service should not be in backup list"
-    )
+    assert (
+        "service: excluded_service" not in output
+    ), "Excluded service should not be in backup list"

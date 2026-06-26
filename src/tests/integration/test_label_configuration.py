@@ -1,6 +1,5 @@
 """Integration tests for label-based configuration"""
 
-import subprocess
 import time
 import pytest
 
@@ -110,6 +109,6 @@ def test_services_without_labels_not_backed_up(run_rcb_command):
     # All services in the list should be ones we explicitly labeled
     expected_services = ["web", "mysql", "mariadb", "postgres", "backup"]
     for service in service_names:
-        assert service in expected_services, (
-            f"Unexpected service '{service}' in backup list"
-        )
+        assert (
+            service in expected_services
+        ), f"Unexpected service '{service}' in backup list"
