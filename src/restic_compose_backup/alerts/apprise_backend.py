@@ -3,6 +3,7 @@ import logging
 from urllib.parse import urlencode
 
 import apprise
+from apprise import NotifyType
 
 from restic_compose_backup.alerts.base import BaseAlert
 
@@ -103,7 +104,14 @@ class AppriseAlert(BaseAlert):
                 logger.warning(
                     "Apprise rejected APPRISE_URLS entry #%d (invalid URL)", index
                 )
-        if not apobj.notify(title=subject or "", body=body or ""):
+        notify_type = (
+            NotifyType.FAILURE
+            if str(alert_type).upper() == "ERROR"
+            else NotifyType.INFO
+        )
+        if not apobj.notify(
+            title=subject or "", body=body or "", notify_type=notify_type
+        ):
             logger.error(
                 "Apprise failed to deliver notification to one or more targets"
             )

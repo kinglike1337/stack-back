@@ -19,6 +19,7 @@ def send(subject: str = None, body: str = None, alert_type: str = "INFO"):
             instance.send(
                 subject=f"[{alert_type}] {subject}",
                 body=body,
+                alert_type=alert_type,
             )
         except Exception as ex:
             logger.error(
