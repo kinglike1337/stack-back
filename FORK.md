@@ -31,6 +31,13 @@ real upstream versions and always sort below them.
 | Apprise notifications (replaces the SMTP/Discord backends) | `feat/apprise-notifications` | not yet submitted |
 | Redact repository password from log output | `fix/redact-repo-password-in-logs` | PR [#114](https://github.com/lawndoc/stack-back/pull/114) |
 | Bump vulnerable transitive Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
+| Apply black formatting (docs + integration tests) | `style/apply-black-formatting` | not yet submitted |
+| Add ruff to pre-commit and fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
+| Fix `block-python-version` hook to match the real file path | `fix/block-python-version-path` | not yet submitted |
+
+This build also pulls in an unmerged upstream Renovate update — a newer
+`restic/restic` base image (`upstream/renovate/restic-restic-0.x`) — which is
+dropped once it lands upstream.
 
 ## Usage (docker compose)
 
