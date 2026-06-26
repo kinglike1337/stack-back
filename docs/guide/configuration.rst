@@ -147,6 +147,11 @@ notification URLs. A single backend then delivers alerts to all of them
 (e.g. Pushover ``pover://user@token``, Telegram ``tgram://bottoken/chatid``,
 ntfy ``ntfy://topic``, Discord ``discord://id/token``).
 
+.. note::
+   A URL that itself contains a comma — most commonly a multi-recipient email
+   such as ``mailtos://user:pass@host?to=a@x.com,b@y.com`` — must be placed on
+   its own line, otherwise the comma is treated as a separator between URLs.
+
 Alerts can be tested using the ``rcb alerts`` command.
 This will send a test message to all configured alert backends.
 

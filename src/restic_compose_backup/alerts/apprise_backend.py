@@ -1,5 +1,4 @@
 import os
-import re
 import logging
 from urllib.parse import urlencode
 
@@ -11,11 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_urls(value: str | None) -> list[str]:
-    """Split a comma/newline separated string into a clean list of URLs."""
+    """Split a newline-separated string into a clean list of URL entries.
+
+    Splitting is intentionally newline-only. Apprise's own ``add()`` already
+    splits comma-separated URL lists while preserving commas that belong to a
+    single URL (e.g. a multi-recipient ``mailto`` ``to=a@x,b@y``), so comma
+    handling is left to it; pre-splitting on commas here would corrupt such
+    URLs.
+    """
     if not value:
         return []
-    parts = re.split(r"[,\n]", value)
-    return [part.strip() for part in parts if part.strip()]
+    return [line.strip() for line in value.splitlines() if line.strip()]
 
 
 def _legacy_email_url():

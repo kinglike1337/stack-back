@@ -18,11 +18,42 @@ class AppriseAlertTests(unittest.TestCase):
         self.assertIsNotNone(instance)
         self.assertEqual(instance.urls, ["pover://user@token"])
 
-    def test_apprise_urls_comma_and_newline(self):
-        env = {"APPRISE_URLS": "a://x, b://y\nc://z ,"}
+    def test_apprise_urls_split_on_newlines_only(self):
+        # Entries are split on newlines only; commas are left intact so that
+        # Apprise can split URL lists itself without breaking a comma that
+        # belongs inside a single URL (e.g. a multi-recipient mailto).
+        env = {
+            "APPRISE_URLS": "json://localhost,pover://user@token\n"
+            "mailtos://u:p@mail.example.com?to=a@example.com,b@example.com\n"
+            "  "  # blank/whitespace line is dropped
+        }
         with mock.patch.dict(os.environ, env, clear=True):
             instance = AppriseAlert.create_from_env()
-        self.assertEqual(instance.urls, ["a://x", "b://y", "c://z"])
+        self.assertEqual(
+            instance.urls,
+            [
+                "json://localhost,pover://user@token",
+                "mailtos://u:p@mail.example.com?to=a@example.com,b@example.com",
+            ],
+        )
+
+    def test_apprise_expands_comma_lists_but_keeps_in_url_commas(self):
+        # End-to-end: a comma-separated line expands into multiple Apprise
+        # targets, while a comma inside one URL (multi-recipient mailto) stays
+        # part of that single target.
+        import apprise
+
+        listed = apprise.Apprise()
+        self.assertTrue(listed.add("json://localhost,pover://user@token"))
+        self.assertEqual(len(listed), 2)
+
+        mail = apprise.Apprise()
+        self.assertTrue(
+            mail.add("mailtos://u:p@mail.example.com?to=a@example.com,b@example.com")
+        )
+        self.assertEqual(len(mail), 1)
+        recipients = [addr for _, addr in mail[0].targets]
+        self.assertEqual(recipients, ["a@example.com", "b@example.com"])
 
     def test_no_config_returns_none(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -111,4 +142,4 @@ class AppriseAlertTests(unittest.TestCase):
             m_apprise.Apprise.return_value.notify.return_value = False
             with self.assertLogs(logger_name, level="ERROR") as cm:
                 alert.send(subject="[ERROR] x", body="y")
-        self.assertTrue(any("ERROR" in line for line in cm.output))
+        self.assertTrue(any("failed to deliver" in line for line in cm.output))
