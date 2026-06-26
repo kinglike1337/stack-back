@@ -1,0 +1,102 @@
+name: "Fork Distribution Build"
+
+# Builds and publishes the fork's bundled image from the `dist` integration
+# branch. This is downstream distribution only — it deliberately omits the
+# upstream auto-git-tag / GitHub-release machinery. Versions are derived as
+# <upstream-base>-fork.<run_number> (e.g. 1.5.4-fork.42), plus rolling `edge`
+# and `sha-<short>`. See FORK.md / CLAUDE.md for the maintenance model.
+
+on:
+  push:
+    branches:
+      - dist
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Derive fork version
+        id: ver
+        run: |
+          # Ensure upstream tags are present so git describe finds the base release.
+          git fetch --tags --force https://github.com/lawndoc/stack-back.git 'refs/tags/*:refs/tags/*' || true
+          BASE=$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
+          BASE=${BASE#v}
+          VERSION="${BASE}-fork.${{ github.run_number }}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "timestamp=$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')" >> "$GITHUB_OUTPUT"
+          echo "Building fork version: ${VERSION}"
+
+      - name: Stamp version into image source
+        run: |
+          version="${{ steps.ver.outputs.version }}"
+          sed -i "s/__version__ = .*/__version__ = \"${version}\"/" src/restic_compose_backup/__init__.py
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: src/
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:edge
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.ver.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.url=${{ github.repositoryUrl }}
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.version=${{ steps.ver.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.ver.outputs.timestamp }}
+
+      - name: Attest container image build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@fbfd9c6c189226748411491745178e0c2017392d # v0.20.10
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.version }}
+          format: cyclonedx-json
+          output-file: ./sbom.cyclonedx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3.0.0
+        with:
+          sbom-path: ./sbom.cyclonedx.json
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
