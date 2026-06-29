@@ -31,7 +31,6 @@ real upstream versions and always sort below them.
 | Apprise notifications (replaces the SMTP/Discord backends) | `feat/apprise-notifications` | not yet submitted |
 | Redact repository password from log output | `fix/redact-repo-password-in-logs` | PR [#114](https://github.com/lawndoc/stack-back/pull/114) |
 | Read `RESTIC_PASSWORD` into `Config.password` | `fix/config-read-restic-password` | not yet submitted |
-| Use valid `DOCKER_HOST` socket URL in fallback | `fix/docker-host-default-socket-url` | not yet submitted |
 | Bump vulnerable transitive Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
 | Apply black formatting (docs + integration tests) | `style/apply-black-formatting` | not yet submitted |
 | Add ruff to pre-commit and fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
