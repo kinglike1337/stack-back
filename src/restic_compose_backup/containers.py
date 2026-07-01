@@ -254,6 +254,14 @@ class Container:
         if not self.volume_backup_enabled:
             return filtered
 
+        if exclude_bind_mounts:
+            for mount in mounts:
+                if mount.type == "bind":
+                    logger.info(
+                        "Including bind mount %s despite EXCLUDE_BIND_MOUNTS",
+                        mount.source,
+                    )
+
         if self._include:
             for mount in mounts:
                 for pattern in self._include:

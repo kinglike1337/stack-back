@@ -338,3 +338,39 @@ class VolumeConfigurationTests(BaseTestCase):
             "restic_compose_backup.config.config.exclude_bind_mounts", True
         ):
             self.assertEqual(len(web_service.filter_mounts()), 0)
+
+    def test_resurrected_bind_logged_at_info(self):
+        """A bind kept only because of include is logged at INFO."""
+        containers = self.createContainers()
+        containers += [
+            {
+                "service": "web",
+                "labels": {
+                    "stack-back.volumes": True,
+                    "stack-back.volumes.include": "data",
+                },
+                "mounts": [
+                    {
+                        "Source": "/srv/files/data",
+                        "Destination": "/srv/data",
+                        "Type": "bind",
+                    }
+                ],
+            },
+        ]
+        with mock.patch(
+            list_containers_func, fixtures.containers(containers=containers)
+        ):
+            cnt = RunningContainers()
+        web_service = cnt.get_service("web")
+        with mock.patch(
+            "restic_compose_backup.config.config.exclude_bind_mounts", True
+        ):
+            with self.assertLogs(
+                "restic_compose_backup.containers", level="INFO"
+            ) as cm:
+                web_service.filter_mounts()
+        self.assertTrue(
+            any("despite EXCLUDE_BIND_MOUNTS" in msg for msg in cm.output),
+            f"Expected INFO log about resurrected bind, got: {cm.output}",
+        )
