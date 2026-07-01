@@ -29,6 +29,7 @@ real upstream versions and always sort below them.
 | Change | Branch | Upstream status |
 |---|---|---|
 | Apprise notifications (replaces the SMTP/Discord backends) | `feat/apprise-notifications` | not yet submitted |
+| Let `stack-back.volumes.include` override `EXCLUDE_BIND_MOUNTS` (per-container bind opt-in) | `feat/include-overrides-bind-exclude` | not yet submitted |
 | Redact repository password from log output | `fix/redact-repo-password-in-logs` | PR [#114](https://github.com/lawndoc/stack-back/pull/114) |
 | Read `RESTIC_PASSWORD` into `Config.password` | `fix/config-read-restic-password` | not yet submitted |
 | Bump vulnerable transitive Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
