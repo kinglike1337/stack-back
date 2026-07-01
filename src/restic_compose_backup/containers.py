@@ -222,6 +222,14 @@ class Container:
         """Get a label by name"""
         return self._labels.get(name, None)
 
+    def _bind_explicitly_included(self, mount) -> bool:
+        """Whether this bind mount matches an explicit stack-back.volumes.include
+        pattern, exempting it from the global EXCLUDE_BIND_MOUNTS strip.
+        """
+        return bool(self._include) and any(
+            pattern in mount.source for pattern in self._include
+        )
+
     def filter_mounts(self):
         """Get all mounts for this container matching include/exclude filters"""
         filtered = []
@@ -231,13 +239,17 @@ class Container:
             "/var/lib/postgresql/data",
         ]
 
-        # If exclude_bind_mounts is true, only volume mounts are kept in the list of mounts
+        # If exclude_bind_mounts is true, bind mounts are dropped globally — unless
+        # the container explicitly includes them via stack-back.volumes.include, in
+        # which case the explicit opt-in wins (see _bind_explicitly_included).
         exclude_bind_mounts = utils.is_true(config.exclude_bind_mounts)
-        mounts = list(
-            filter(
-                lambda m: not exclude_bind_mounts or m.type == "volume", self._mounts
-            )
-        )
+        mounts = [
+            m
+            for m in self._mounts
+            if m.type == "volume"
+            or not exclude_bind_mounts
+            or self._bind_explicitly_included(m)
+        ]
 
         if not self.volume_backup_enabled:
             return filtered
