@@ -37,9 +37,14 @@ real upstream versions and always sort below them.
 | Add ruff to pre-commit and fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
 | Fix `block-python-version` hook to match the real file path | `fix/block-python-version-path` | not yet submitted |
 
-This build also pulls in an unmerged upstream Renovate update — a newer
-`restic/restic` base image (`upstream/renovate/restic-restic-0.x`) — which is
-dropped once it lands upstream.
+This build also pulls in unmerged upstream Renovate updates, each dropped once
+it lands upstream:
+
+| Update | Branch | Upstream status |
+|---|---|---|
+| Newer `restic/restic` base image | `upstream/renovate/restic-restic-0.x` | PR [#113](https://github.com/lawndoc/stack-back/pull/113) |
+| Newer `ghcr.io/astral-sh/uv` build stage | `upstream/renovate/ghcr.io-astral-sh-uv-0.x` | PR [#94](https://github.com/lawndoc/stack-back/pull/94) |
+| Newer `linuxserver/socket-proxy` in the integration-test stack | `upstream/renovate/linuxserver-socket-proxy-3.x` | PR [#98](https://github.com/lawndoc/stack-back/pull/98) |
 
 ## Usage (docker compose)
 
