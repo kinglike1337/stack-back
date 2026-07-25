@@ -130,9 +130,9 @@ def test_database_health_check(run_rcb_command):
     assert exit_code == 0
 
     # All databases should be reported as ready
-    assert "is_ready=True" in output, (
-        "Database health checks should show databases as ready"
-    )
+    assert (
+        "is_ready=True" in output
+    ), "Database health checks should show databases as ready"
 
 
 def test_backup_after_database_changes(run_rcb_command, mysql_container):

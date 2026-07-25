@@ -492,9 +492,11 @@ def backup_container_with_multi_project(
         config["Image"],
         environment=env_list,
         volumes=host_config.get("Binds", []),
-        network=list(container_info["NetworkSettings"]["Networks"].keys())[0]
-        if container_info["NetworkSettings"]["Networks"]
-        else None,
+        network=(
+            list(container_info["NetworkSettings"]["Networks"].keys())[0]
+            if container_info["NetworkSettings"]["Networks"]
+            else None
+        ),
         name=container_info["Name"].strip("/"),
         labels=config.get("Labels", {}),
     )
