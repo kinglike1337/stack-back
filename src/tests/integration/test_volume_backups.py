@@ -18,7 +18,7 @@ def test_backup_status(run_rcb_command):
 def test_backup_bind_mount(run_rcb_command, create_test_data, backup_container):
     """Test backing up a bind mount"""
     # Create test data in the bind mount
-    test_file = create_test_data("test_data/web/test.txt", "Hello from bind mount!")
+    create_test_data("test_data/web/test.txt", "Hello from bind mount!")
 
     # Wait a moment for the file to be visible
     time.sleep(2)
