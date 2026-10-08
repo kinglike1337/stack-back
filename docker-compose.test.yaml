@@ -25,7 +25,7 @@ services:
       - AUTO_BACKUP_ALL=false
       - LOG_LEVEL=debug
       - INCLUDE_PROJECT_NAME=false
-      - EXCLUDE_BIND_MOUNTS=false
+      - EXCLUDE_BIND_MOUNTS=true
       - RESTIC_KEEP_DAILY=7
       - RESTIC_KEEP_WEEKLY=4
       - RESTIC_KEEP_MONTHLY=12
@@ -121,6 +121,18 @@ services:
       stack-back.volumes: false
     volumes:
       - excluded_data:/data
+    networks:
+      - test-network
+
+  # Service to test that bind mounts are stripped under EXCLUDE_BIND_MOUNTS
+  # unless explicitly included (contrast with `web`, which has include: "data").
+  bind_no_include:
+    image: alpine:latest
+    command: tail -f /dev/null
+    labels:
+      stack-back.volumes: true
+    volumes:
+      - ./test_data/bind_no_include:/srv/data
     networks:
       - test-network
 

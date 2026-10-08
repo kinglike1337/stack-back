@@ -281,6 +281,11 @@ docker volumes. Often host binds are only used
 for mapping in configuration. This saves the user
 from manually excluding these bind volumes.
 
+To still back up specific bind mounts (for example an application's
+data directory) set the ``stack-back.volumes.include`` label on that
+service. An explicit include overrides the global exclude for matching
+mounts — see ``stack-back.volumes.include`` under Compose Labels below.
+
 INCLUDE_ALL_COMPOSE_PROJECTS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -425,6 +430,10 @@ Exclude example achieving the same result as the example above.
 
 The ``exclude`` and ``include`` tag can be used together
 in more complex situations.
+
+Note that ``include`` also matches bind-mount sources and, when
+``EXCLUDE_BIND_MOUNTS`` is defined, is the way to opt specific bind
+mounts back into backup.
 
 mariadb
 ~~~~~~~
