@@ -1,14 +1,13 @@
 import logging
 
-from restic_compose_backup.alerts.smtp import SMTPAlert
-from restic_compose_backup.alerts.discord import DiscordWebhookAlert
+from restic_compose_backup.alerts.apprise_backend import AppriseAlert
 
 logger = logging.getLogger(__name__)
 
 ALERT_INFO = ("INFO",)
 ALERT_ERROR = "ERROR"
 ALERT_TYPES = [ALERT_INFO, ALERT_ERROR]
-BACKENDS = [SMTPAlert, DiscordWebhookAlert]
+BACKENDS = [AppriseAlert]
 
 
 def send(subject: str = None, body: str = None, alert_type: str = "INFO"):
@@ -20,6 +19,7 @@ def send(subject: str = None, body: str = None, alert_type: str = "INFO"):
             instance.send(
                 subject=f"[{alert_type}] {subject}",
                 body=body,
+                alert_type=alert_type,
             )
         except Exception as ex:
             logger.error(
