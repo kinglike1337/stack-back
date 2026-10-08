@@ -37,9 +37,9 @@ def test_backup_only_same_project_by_default(
     exit_code, output = secondary_web_container.exec_run(
         "sh -c 'echo \"Secondary volume data\" > /usr/share/nginx/html/secondary.html'"
     )
-    assert exit_code == 0, (
-        f"Failed to create test data in secondary container: {output.decode()}"
-    )
+    assert (
+        exit_code == 0
+    ), f"Failed to create test data in secondary container: {output.decode()}"
 
     time.sleep(2)
 
@@ -120,9 +120,9 @@ def test_backup_all_compose_projects_volumes(
     )
     find_output = output.decode()
     assert exit_code == 0, f"Failed to find restored file: {find_output}"
-    assert "multi_project_test.txt" in find_output, (
-        "Secondary project bind mount file not found in backup"
-    )
+    assert (
+        "multi_project_test.txt" in find_output
+    ), "Secondary project bind mount file not found in backup"
 
     # Check for secondary project named volume data
     exit_code, output = backup_container_with_multi_project.exec_run(
@@ -130,9 +130,9 @@ def test_backup_all_compose_projects_volumes(
     )
     find_output = output.decode()
     assert exit_code == 0, f"Failed to find restored file: {find_output}"
-    assert "multi_project.html" in find_output, (
-        "Secondary project named volume file not found in backup"
-    )
+    assert (
+        "multi_project.html" in find_output
+    ), "Secondary project named volume file not found in backup"
 
 
 def test_backup_all_compose_projects_databases(
@@ -221,9 +221,9 @@ def test_include_all_projects_with_excluded_services(
     assert exit_code == 0
 
     # The excluded_service from main project should not appear
-    assert "service: excluded_service" not in status_output, (
-        "Excluded service should not be in backup list even with INCLUDE_ALL_COMPOSE_PROJECTS"
-    )
+    assert (
+        "service: excluded_service" not in status_output
+    ), "Excluded service should not be in backup list even with INCLUDE_ALL_COMPOSE_PROJECTS"
 
     # But other services should appear
     assert "service: web" in status_output
