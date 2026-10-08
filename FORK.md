@@ -45,6 +45,7 @@ it lands upstream:
 | Newer `restic/restic` base image | `upstream/renovate/restic-restic-0.x` | PR [#113](https://github.com/lawndoc/stack-back/pull/113) |
 | Newer `ghcr.io/astral-sh/uv` build stage | `upstream/renovate/ghcr.io-astral-sh-uv-0.x` | PR [#94](https://github.com/lawndoc/stack-back/pull/94) |
 | Newer `linuxserver/socket-proxy` in the integration-test stack | `upstream/renovate/linuxserver-socket-proxy-3.x` | PR [#98](https://github.com/lawndoc/stack-back/pull/98) |
+| Allow container logs (`ALLOW_LOGS`) on the integration-test socket-proxy, required by 3.4.x | `fix/test-socket-proxy-allow-logs` | not yet submitted (needed once PR [#98](https://github.com/lawndoc/stack-back/pull/98) merges) |
 
 ## Usage (docker compose)
 
