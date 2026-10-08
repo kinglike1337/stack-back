@@ -1,6 +1,5 @@
 """Unit tests for container operations"""
 
-import unittest
 from unittest import mock
 import pytest
 
@@ -44,7 +43,7 @@ class ContainerOperationTests(BaseTestCase):
         with mock.patch(
             list_containers_func, fixtures.containers(containers=containers)
         ):
-            test = utils.list_containers()
+            utils.list_containers()
 
     def test_running_containers(self):
         """Test detection and parsing of running containers"""
