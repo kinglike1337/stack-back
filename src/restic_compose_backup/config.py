@@ -14,7 +14,7 @@ class Config:
     def __init__(self, check=True):
         # Mandatory values
         self.repository = os.environ.get("RESTIC_REPOSITORY")
-        self.password = os.environ.get("RESTIC_REPOSITORY")
+        self.password = os.environ.get("RESTIC_PASSWORD")
         self.check_with_cache = os.environ.get("CHECK_WITH_CACHE") or False
         self.cron_schedule = (
             os.environ.get("CRON_SCHEDULE") or self.default_crontab_schedule
@@ -72,7 +72,7 @@ class Config:
             raise ValueError("RESTIC_REPOSITORY env var not set")
 
         if not self.password:
-            raise ValueError("RESTIC_REPOSITORY env var not set")
+            raise ValueError("RESTIC_PASSWORD env var not set")
 
 
 config = Config()
