@@ -122,24 +122,38 @@ def test_excluded_service_not_backed_up(run_rcb_command):
     exit_code, output = run_rcb_command("status")
     assert exit_code == 0
     # The excluded_service should not appear in the backup list
-    assert (
-        "service: excluded_service" not in output
-    ), "Excluded service should not be in backup list"
+    assert "service: excluded_service" not in output, (
+        "Excluded service should not be in backup list"
+    )
 
 
-def test_bind_resurrected_by_include(run_rcb_command):
-    """Bind mounts are backed up under EXCLUDE_BIND_MOUNTS only when included."""
+def test_bind_without_include_backed_up_by_default(run_rcb_command):
+    """Without EXCLUDE_BIND_MOUNTS, bind mounts are backed up without an include."""
     exit_code, output = run_rcb_command("status")
+    assert exit_code == 0, f"Status command failed: {output}"
+    assert "test_data/bind_no_include" in output, (
+        "bind_no_include's bind should be backed up when EXCLUDE_BIND_MOUNTS is unset"
+    )
+
+
+def test_bind_resurrected_by_include(backup_container):
+    """Bind mounts are backed up under EXCLUDE_BIND_MOUNTS only when included."""
+    # The test stack runs with EXCLUDE_BIND_MOUNTS=false; enable it for this
+    # one status call only.
+    exit_code, output = backup_container.exec_run(
+        "rcb status", environment={"EXCLUDE_BIND_MOUNTS": "true"}
+    )
+    output = output.decode()
     assert exit_code == 0, f"Status command failed: {output}"
 
     # `web` has stack-back.volumes.include: "data" -> its bind is resurrected.
-    assert (
-        "test_data/web" in output
-    ), "web's bind mount should be resurrected by stack-back.volumes.include"
+    assert "test_data/web" in output, (
+        "web's bind mount should be resurrected by stack-back.volumes.include"
+    )
 
     # `bind_no_include` has no include -> its bind is stripped (service present,
     # but no volume line for it).
     assert "service: bind_no_include" in output
-    assert (
-        "test_data/bind_no_include" not in output
-    ), "bind_no_include's bind should be stripped under EXCLUDE_BIND_MOUNTS"
+    assert "test_data/bind_no_include" not in output, (
+        "bind_no_include's bind should be stripped under EXCLUDE_BIND_MOUNTS"
+    )

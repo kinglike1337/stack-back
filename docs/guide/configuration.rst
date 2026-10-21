@@ -409,7 +409,11 @@ in more complex situations.
 
 Note that ``include`` also matches bind-mount sources and, when
 ``EXCLUDE_BIND_MOUNTS`` is defined, is the way to opt specific bind
-mounts back into backup.
+mounts back into backup. Patterns match any part of the mount source
+(the host path for a bind mount), so a pattern written for a volume
+also brings back a bind mount whose host path contains it. Setups that
+already combined ``EXCLUDE_BIND_MOUNTS`` with ``include`` patterns can
+therefore back up more bind mounts than before this behaviour existed.
 
 mariadb
 ~~~~~~~
