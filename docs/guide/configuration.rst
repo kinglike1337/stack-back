@@ -228,6 +228,24 @@ DOCKER_HOST
 
 The socket or host of the docker service.
 
+When this points to a Docker socket proxy instead of the socket itself,
+the proxy must allow the API calls stack-back makes: listing and
+inspecting containers, ``exec`` for database dumps, creating the backup
+process container, starting and stopping containers, and reading the
+backup process container's logs. For ``linuxserver/socket-proxy`` that
+is::
+
+    CONTAINERS=1
+    EXEC=1
+    POST=1
+    VERSION=1
+    ALLOW_START=1
+    ALLOW_STOP=1
+    ALLOW_LOGS=1
+
+``ALLOW_LOGS`` is required since ``linuxserver/socket-proxy`` 3.4, where
+``CONTAINERS=1`` no longer grants access to container logs.
+
 DOCKER_TLS_VERIFY
 ~~~~~~~~~~~~~~~~~
 
