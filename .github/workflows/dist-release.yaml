@@ -4,13 +4,22 @@ name: "Fork Distribution Build"
 # branch. This is downstream distribution only — it deliberately omits the
 # upstream auto-git-tag / GitHub-release machinery. Versions are derived as
 # <upstream-base>-fork.<run_number> (e.g. 1.5.4-fork.42), plus rolling `edge`
-# and `sha-<short>`. See FORK.md / CLAUDE.md for the maintenance model.
+# and `sha-<short>`. See FORK.md for the maintenance model.
 
 on:
   push:
     branches:
       - dist
   workflow_dispatch:
+
+# Queue runs instead of overlapping them, so `edge` always ends up on the
+# newest dist push.
+concurrency:
+  group: dist-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -40,8 +49,23 @@ jobs:
           uv sync --locked --directory src/
           uv run --directory src/ pytest -m "integration" -v
 
+  # Same formatting gate as upstream's pr-verify.yaml, plus lint.
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: Check formatting and lint
+        run: |
+          uv sync --locked --directory src/
+          uv run --directory src/ ruff format --check --diff .
+          uv run --directory src/ ruff check .
+
   build-publish:
-    needs: integration-tests
+    needs: [integration-tests, code-quality]
+    # workflow_dispatch can be started on any branch; only dist may publish.
+    if: github.ref == 'refs/heads/dist'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,8 +81,9 @@ jobs:
         id: ver
         run: |
           # Ensure upstream tags are present so git describe finds the base release.
-          git fetch --tags --force https://github.com/lawndoc/stack-back.git 'refs/tags/*:refs/tags/*' || true
-          BASE=$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
+          # Fail instead of publishing a bogus 0.0.0-fork.N when that does not work.
+          git fetch --tags --force https://github.com/lawndoc/stack-back.git 'refs/tags/*:refs/tags/*'
+          BASE=$(git describe --tags --abbrev=0)
           BASE=${BASE#v}
           VERSION="${BASE}-fork.${{ github.run_number }}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"

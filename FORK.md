@@ -31,10 +31,9 @@ real upstream versions and always sort below them.
 | Apprise notifications (replaces the SMTP/Discord backends) | `feat/apprise-notifications` | not yet submitted |
 | Let `stack-back.volumes.include` override `EXCLUDE_BIND_MOUNTS` (per-container bind opt-in) | `feat/include-overrides-bind-exclude` | not yet submitted |
 | Redact repository password from log output | `fix/redact-repo-password-in-logs` | PR [#114](https://github.com/lawndoc/stack-back/pull/114) |
-| Read `RESTIC_PASSWORD` into `Config.password` | `fix/config-read-restic-password` | not yet submitted |
-| Bump vulnerable transitive Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
-| Apply black formatting (docs + integration tests) | `style/apply-black-formatting` | not yet submitted |
-| Add ruff to pre-commit and fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
+| Read `RESTIC_PASSWORD` into `Config.password`; accept `RESTIC_PASSWORD_FILE` / `RESTIC_PASSWORD_COMMAND` | `fix/config-read-restic-password` | not yet submitted |
+| Bump vulnerable Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
+| Use ruff (check + format) in pre-commit instead of black, fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
 | Fix `block-python-version` hook to match the real file path | `fix/block-python-version-path` | not yet submitted |
 
 This build also pulls in unmerged upstream Renovate updates, each dropped once
@@ -45,7 +44,7 @@ it lands upstream:
 | Newer `restic/restic` base image | `upstream/renovate/restic-restic-0.x` | PR [#113](https://github.com/lawndoc/stack-back/pull/113) |
 | Newer `ghcr.io/astral-sh/uv` build stage | `upstream/renovate/ghcr.io-astral-sh-uv-0.x` | PR [#94](https://github.com/lawndoc/stack-back/pull/94) |
 | Newer `linuxserver/socket-proxy` in the integration-test stack | `upstream/renovate/linuxserver-socket-proxy-3.x` | PR [#98](https://github.com/lawndoc/stack-back/pull/98) |
-| Allow container logs (`ALLOW_LOGS`) on the integration-test socket-proxy, required by 3.4.x | `fix/test-socket-proxy-allow-logs` | not yet submitted (needed once PR [#98](https://github.com/lawndoc/stack-back/pull/98) merges) |
+| Allow container logs (`ALLOW_LOGS`) on the integration-test socket-proxy, required by 3.4.x; document the proxy permissions | `fix/test-socket-proxy-allow-logs` | not yet submitted (needed once PR [#98](https://github.com/lawndoc/stack-back/pull/98) merges) |
 
 ## Usage (docker compose)
 
@@ -76,4 +75,9 @@ labels:
 
 Images are built by the `Fork Distribution Build` workflow from the `dist`
 branch, which is rebuilt as `upstream/main` + the patch branches above. The
-`main` branch tracks `upstream/main` unchanged.
+build publishes only after unit tests, integration tests and the formatting
+and lint check pass. The `main` branch tracks `upstream/main` unchanged.
+
+Upstream's `Build, Tag, and Release` workflow (`build-tag-release.yaml`) is
+disabled in this fork's Actions settings. Keep it that way: on a push to
+`main` it would push `vX.Y.Z` tags and `latest` to this fork's image.
