@@ -1,12 +1,42 @@
 """Unit tests for the Apprise notification backend."""
 
+import json
 import os
 import unittest
+from contextlib import contextmanager
 from unittest import mock
 
+import apprise
 import pytest
 
-from restic_compose_backup.alerts.apprise_backend import AppriseAlert
+from restic_compose_backup.alerts.apprise_backend import (
+    TRUNCATION_NOTICE,
+    AppriseAlert,
+    _fit_body,
+)
+
+LOGGER = "restic_compose_backup.alerts.apprise_backend"
+DISCORD_URL = "https://discord.com/api/webhooks/1/abc"
+
+
+@contextmanager
+def fake_http(status_code=200):
+    """Intercept the HTTP calls Apprise plugins make; yields the two mocks.
+
+    The json:// plugin uses requests.request, Discord uses requests.post.
+    """
+    with (
+        mock.patch("requests.request") as m_request,
+        mock.patch("requests.post") as m_post,
+    ):
+        for m in (m_request, m_post):
+            m.return_value.status_code = status_code
+            m.return_value.content = b""
+        yield m_request, m_post
+
+
+def json_payloads(m_request):
+    return [json.loads(call.kwargs["data"]) for call in m_request.call_args_list]
 
 
 @pytest.mark.unit
@@ -114,7 +144,7 @@ class AppriseAlertTests(unittest.TestCase):
             "EMAIL_HOST": "mail.example.com",
             "EMAIL_PORT": "587",
             "EMAIL_HOST_USER": "u@example.com",
-            # EMAIL_SEND_TO fehlt -> kein Mail-Ziel
+            # EMAIL_SEND_TO missing -> no mail target
         }
         with mock.patch.dict(os.environ, env, clear=True):
             instance = AppriseAlert.create_from_env()
@@ -139,55 +169,97 @@ class AppriseAlertTests(unittest.TestCase):
         self.assertEqual(len(instance.urls), 2)
         self.assertTrue(any("deprecated" in line for line in cm.output))
 
-    def test_send_adds_urls_and_notifies(self):
-        from restic_compose_backup.alerts.apprise_backend import NotifyType
+    def test_legacy_discord_client_variants_normalised(self):
+        # Webhook URLs copied from the PTB/Canary client or with an API version
+        # worked with the old backend; Apprise only parses the plain form.
+        for webhook in [
+            "https://ptb.discord.com/api/webhooks/1/abc",
+            "https://canary.discord.com/api/v10/webhooks/1/abc",
+            "https://discordapp.com/api/webhooks/1/abc",
+        ]:
+            with self.subTest(webhook=webhook):
+                with mock.patch.dict(
+                    os.environ, {"DISCORD_WEBHOOK": webhook}, clear=True
+                ):
+                    instance = AppriseAlert.create_from_env()
+                self.assertEqual(instance.urls, [DISCORD_URL])
+                self.assertTrue(apprise.Apprise().add(instance.urls[0]))
 
-        alert = AppriseAlert(["pover://user@token", "discord://1/abc"])
-        with mock.patch(
-            "restic_compose_backup.alerts.apprise_backend.apprise"
-        ) as m_apprise:
-            alert.send(subject="[INFO] Backup done", body="boom", alert_type="INFO")
-        apobj = m_apprise.Apprise.return_value
-        self.assertEqual(apobj.add.call_count, 2)
-        apobj.notify.assert_called_once_with(
-            title="[INFO] Backup done", body="boom", notify_type=NotifyType.INFO
+    def test_sources_name_each_url(self):
+        env = {
+            "APPRISE_URLS": "json://localhost\npover://user@token",
+            "DISCORD_WEBHOOK": DISCORD_URL,
+        }
+        with mock.patch.dict(os.environ, env, clear=True):
+            instance = AppriseAlert.create_from_env()
+        self.assertEqual(
+            instance.sources,
+            ["APPRISE_URLS entry #1", "APPRISE_URLS entry #2", "DISCORD_WEBHOOK"],
         )
+
+    def test_send_notifies_each_target(self):
+        alert = AppriseAlert(["json://localhost", "json://otherhost"])
+        with fake_http() as (m_request, _):
+            alert.send(subject="[INFO] Backup done", body="boom", alert_type="INFO")
+        hosts = [call.args[1] for call in m_request.call_args_list]
+        self.assertEqual(sorted(hosts), ["http://localhost", "http://otherhost"])
+        for payload in json_payloads(m_request):
+            self.assertEqual(payload["title"], "[INFO] Backup done")
+            self.assertEqual(payload["message"], "boom")
+            self.assertEqual(payload["type"], "info")
 
     def test_send_maps_error_alert_type_to_failure(self):
-        from restic_compose_backup.alerts.apprise_backend import NotifyType
-
-        alert = AppriseAlert(["pover://user@token"])
-        with mock.patch(
-            "restic_compose_backup.alerts.apprise_backend.apprise"
-        ) as m_apprise:
+        alert = AppriseAlert(["json://localhost"])
+        with fake_http() as (m_request, _):
             alert.send(subject="[ERROR] Backup failed", body="boom", alert_type="ERROR")
-        apobj = m_apprise.Apprise.return_value
-        apobj.notify.assert_called_once_with(
-            title="[ERROR] Backup failed", body="boom", notify_type=NotifyType.FAILURE
-        )
+        self.assertEqual(json_payloads(m_request)[0]["type"], "failure")
 
     def test_send_logs_error_on_notify_failure(self):
-        alert = AppriseAlert(["pover://user@token"])
-        logger_name = "restic_compose_backup.alerts.apprise_backend"
-        with mock.patch(
-            "restic_compose_backup.alerts.apprise_backend.apprise"
-        ) as m_apprise:
-            m_apprise.Apprise.return_value.notify.return_value = False
-            with self.assertLogs(logger_name, level="ERROR") as cm:
+        alert = AppriseAlert(["json://localhost"])
+        with fake_http(status_code=500):
+            with self.assertLogs(LOGGER, level="ERROR") as cm:
                 alert.send(subject="[ERROR] x", body="y")
         self.assertTrue(any("failed to deliver" in line for line in cm.output))
 
     def test_send_warns_on_rejected_url(self):
-        # A typo'd URL is rejected by Apprise's add() (returns False). The
-        # backend must surface that instead of silently dropping the target.
-        alert = AppriseAlert(["pover://user@token", "bogus"])
-        logger_name = "restic_compose_backup.alerts.apprise_backend"
-        with mock.patch(
-            "restic_compose_backup.alerts.apprise_backend.apprise"
-        ) as m_apprise:
-            apobj = m_apprise.Apprise.return_value
-            apobj.add.side_effect = [True, False]
-            apobj.notify.return_value = True
-            with self.assertLogs(logger_name, level="WARNING") as cm:
+        # A typo'd URL is rejected by Apprise's add(). The backend must name
+        # it instead of silently dropping the target, and still notify the rest.
+        alert = AppriseAlert(["json://localhost", "bogus"])
+        with fake_http() as (m_request, _):
+            with self.assertLogs(LOGGER, level="WARNING") as cm:
                 alert.send(subject="[INFO] x", body="y")
-        self.assertTrue(any("rejected" in line for line in cm.output))
+        self.assertTrue(any("URL #2" in line for line in cm.output))
+        self.assertEqual(m_request.call_count, 1)
+
+    def test_send_without_valid_target_logs_error(self):
+        alert = AppriseAlert(["bogus"])
+        with self.assertLogs(LOGGER, level="ERROR") as cm:
+            alert.send(subject="[INFO] x", body="y")
+        self.assertTrue(any("No valid" in line for line in cm.output))
+
+    def test_discord_long_body_trimmed_keeping_the_end(self):
+        # A failed backup sends the whole backup log. Discord rejects messages
+        # over 2000 characters, so only the end (where the error is) is sent.
+        log = "\n".join(f"line {i} " + "x" * 80 for i in range(200))
+        log += "\nFatal: unable to save snapshot"
+        alert = AppriseAlert([DISCORD_URL])
+        with fake_http(status_code=204) as (_, m_post):
+            alert.send(
+                subject="[ERROR] Backup process exited with non-zero code",
+                body=log,
+                alert_type="ERROR",
+            )
+        content = json.loads(m_post.call_args.kwargs["data"])["content"]
+        self.assertLessEqual(len(content), 2000)
+        self.assertIn(TRUNCATION_NOTICE.strip(), content)
+        self.assertTrue(content.endswith("Fatal: unable to save snapshot"))
+
+    def test_short_body_is_not_trimmed(self):
+        server = apprise.Apprise.instantiate(DISCORD_URL)
+        self.assertEqual(_fit_body("short", "title", server), "short")
+
+    def test_explicit_overflow_mode_left_to_apprise(self):
+        # ?overflow=split asks Apprise to send the full text in several parts.
+        server = apprise.Apprise.instantiate(DISCORD_URL + "?overflow=split")
+        body = "x" * 5000
+        self.assertEqual(_fit_body(body, "title", server), body)
