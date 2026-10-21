@@ -5,6 +5,7 @@ description = "Backup Docker Compose volumes and databases with Restic"
 requires-python = ">=3.12"
 dependencies = [
     'docker>=7.1.0',
+    'apprise>=1.9.0',
 ]
 
 [dependency-groups]
