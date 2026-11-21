@@ -32,6 +32,7 @@ real upstream versions and always sort below them.
 | Let `stack-back.volumes.include` override `EXCLUDE_BIND_MOUNTS` (per-container bind opt-in) | `feat/include-overrides-bind-exclude` | not yet submitted |
 | Redact repository password from log output | `fix/redact-repo-password-in-logs` | PR [#114](https://github.com/lawndoc/stack-back/pull/114) |
 | Read `RESTIC_PASSWORD` into `Config.password`; accept `RESTIC_PASSWORD_FILE` / `RESTIC_PASSWORD_COMMAND` | `fix/config-read-restic-password` | not yet submitted |
+| Return first non-zero exit code from `cleanup()` instead of masking single-step `forget`/`prune` failures | `fix/cleanup-return-nonzero` | not yet submitted |
 | Bump vulnerable Python deps | `chore/bump-vulnerable-python-deps` | not yet submitted |
 | Use ruff (check + format) in pre-commit instead of black, fix lint errors | `chore/add-ruff-precommit-hook` | not yet submitted |
 | Fix `block-python-version` hook to match the real file path | `fix/block-python-version-path` | not yet submitted |
