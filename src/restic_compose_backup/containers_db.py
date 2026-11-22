@@ -194,7 +194,6 @@ class PostgresContainer(Container):
 
     def backup(self):
         config = Config()
-        creds = self.get_credentials()
 
         return restic.backup_from_stdin(
             config.repository,

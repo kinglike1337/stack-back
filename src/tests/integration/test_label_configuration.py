@@ -1,6 +1,5 @@
 """Integration tests for label-based configuration"""
 
-import subprocess
 import time
 import pytest
 
