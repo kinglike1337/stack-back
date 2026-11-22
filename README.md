@@ -7,7 +7,7 @@ Automated incremental backups using [restic] for any docker-compose setup.
 
 * Backup docker volumes or host binds
 * Backup postgres, mariadb, and mysql databases
-* Notifications over SMTP or Discord webhooks
+* Notifications to 100+ services via [Apprise] (e-mail, Discord, Telegram, Pushover, ntfy, ...)
 
 # Usage
 
@@ -166,6 +166,7 @@ python src/setup.py build_sphinx
 ```
 
 [restic]: https://restic.net/
+[Apprise]: https://github.com/caronc/apprise
 [documentation]: https://stack-back.readthedocs.io
 
 ---
